@@ -1,5 +1,5 @@
 import pandas as pd
-import streamlit as st # Import the streamlit libraryimport pandas as pd
+import streamlit as st # Import the streamlit library
 import plotly.express as px
 
 # Set the URL for the CSV file
@@ -32,33 +32,52 @@ st.dataframe(df_url.head())
 # st.subheader("Full DataFrame")
 # st.dataframe(df_url)
 
-# --- Setup: Assuming 'arts_df' is already loaded and available ---
-# You would typically load your data here.
-# For demonstration, let's create a dummy DataFrame that mimics the structure.
-# In your actual app, replace this with your data loading logic (e.g., from the previous question).
-data = {
-    'Gender': ['Female', 'Male', 'Female', 'Female', 'Male', 'Female', 'Other', 'Female', 'Male']
-}
-arts_df = pd.DataFrame(data)
-# ----------------------------------------------------------------
+
+# 1. Configuration and Data Loading
+# Best practice: Use st.cache_data for functions that load data from disk or the internet.
+# This ensures the data is loaded only once, significantly speeding up the app.
+@st.cache_data
+def load_data():
+    """Loads the student survey data from a public URL."""
+    url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
+    try:
+        df = pd.read_csv(url)
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
+
+# Load the DataFrame
+df_url = load_data()
 
 st.title("Gender Distribution in Arts Faculty 🎭")
 
-# 1. Calculate the counts (same logic as before)
-gender_counts = arts_df['Gender'].value_counts().reset_index()
-gender_counts.columns = ['Gender', 'Count'] # Rename columns for Plotly clarity
+# Check if data was loaded successfully
+if not df_url.empty:
+    # 2. Data Processing (equivalent to gender_counts = df_url['Gender'].value_counts())
+    # Create a DataFrame from the counts, which Plotly prefers
+    gender_counts_df = df_url['Gender'].value_counts().reset_index()
+    gender_counts_df.columns = ['Gender', 'Count']
 
-# 2. Create the Plotly Pie Chart
-# Plotly Express uses the DataFrame directly, making it very clean.
-fig = px.pie(
-    gender_counts,
-    values='Count',          # The column to use for the size of the slices
-    names='Gender',          # The column to use for the labels of the slices
-    title='Distribution of Gender in Arts Faculty',
-    hole=.3,                 # Optional: creates a donut chart
-    color_discrete_sequence=px.colors.sequential.RdBu # Optional: set a color palette
-)
+    # 3. Create the Plotly Pie Chart (replacing Matplotlib)
+    fig = px.pie(
+        gender_counts_df,
+        values='Count',
+        names='Gender',
+        title='Distribution of Gender in Arts Faculty',
+        # Optional: Add hover data for a better interactive experience
+        hover_data=['Count'],
+        labels={'Count':'Number of Students'},
+        # Optional: Make it a donut chart for better aesthetics
+        hole=0.4
+    )
 
-# 3. Use Streamlit to display the interactive Plotly figure
-st.plotly_chart(fig, use_container_width=True)
+    # Enhance layout for better presentation
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    
+    # 4. Display the Chart
+    # st.plotly_chart displays the interactive Plotly figure
+    st.plotly_chart(fig, use_container_width=True)
 
+else:
+    st.warning("Could not process data because the DataFrame is empty.")
