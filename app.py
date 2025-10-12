@@ -32,10 +32,8 @@ st.dataframe(df_url.head())
 # st.subheader("Full DataFrame")
 # st.dataframe(df_url)
 
-
-# 1. Configuration and Data Loading
-# Best practice: Use st.cache_data for functions that load data from disk or the internet.
-# This ensures the data is loaded only once, significantly speeding up the app.
+#SECOND CODE
+# --- Data Loading Function (Same as before, using caching) ---
 @st.cache_data
 def load_data():
     """Loads the student survey data from a public URL."""
@@ -50,33 +48,28 @@ def load_data():
 # Load the DataFrame
 df_url = load_data()
 
-st.title("Gender Distribution in Arts Faculty 🎭")
+st.title("Gender Distribution in Arts Faculty (Pie Chart) 📊")
 
-# Check if data was loaded successfully
 if not df_url.empty:
-    # 2. Data Processing (equivalent to gender_counts = df_url['Gender'].value_counts())
-    # Create a DataFrame from the counts, which Plotly prefers
+    # 1. Data Processing
     gender_counts_df = df_url['Gender'].value_counts().reset_index()
     gender_counts_df.columns = ['Gender', 'Count']
 
-    # 3. Create the Plotly Pie Chart (replacing Matplotlib)
+    # 2. Create the Plotly Pie Chart (The 'hole' parameter is REMOVED)
     fig = px.pie(
         gender_counts_df,
         values='Count',
         names='Gender',
         title='Distribution of Gender in Arts Faculty',
-        # Optional: Add hover data for a better interactive experience
         hover_data=['Count'],
-        labels={'Count':'Number of Students'},
-        # Optional: Make it a donut chart for better aesthetics
-        hole=0.4
+        labels={'Count':'Number of Students'}
+        # Removed: hole=0.4 ⬅️ This is what caused the donut chart!
     )
 
     # Enhance layout for better presentation
     fig.update_traces(textposition='inside', textinfo='percent+label')
     
-    # 4. Display the Chart
-    # st.plotly_chart displays the interactive Plotly figure
+    # 3. Display the Chart
     st.plotly_chart(fig, use_container_width=True)
 
 else:
