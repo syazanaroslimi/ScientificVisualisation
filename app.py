@@ -1,8 +1,6 @@
 import pandas as pd
 import streamlit as st # Import the streamlit library
 import plotly.express as px
-import numpy as np
-import plotly.graph_objects as go
 
 
 # Set the URL for the CSV file
@@ -362,7 +360,7 @@ else:
 
 #_________________________________________________________________________________________________________________________________________
 #code 7
-# --- Data Loading Function (Retained for application context) ---
+# --- Data Loading Function (Assumed to be defined and used for efficiency) ---
 @st.cache_data
 def load_data():
     """Loads the student survey data from a public URL."""
@@ -376,73 +374,65 @@ def load_data():
 
 # Load the DataFrame
 df_url = load_data()
-# ---------------------------------------------------------------
+# --------------------------------------------------------------------------------
 
-st.title("Average Performance by Semester and Year Heatmap 📈")
+st.title("H.S.C or Equivalent Study Medium Distribution by Gender 📚")
 
 if not df_url.empty:
+    # 1. Safely find the column names
+    gender_col = 'Gender'
+    search_term = 'H.S.C or Equivalent study medium'
     
-    # 1. ROBUST COLUMN IDENTIFICATION
-    search_list = []
-    for year in range(1, 5):
-        year_str = f"{year}st" if year == 1 else f"{year}th"
-        for sem in range(1, 4):
-            search_list.append(f"{year_str} Year Semester {sem}")
-
-    actual_semester_columns = []
+    # Robustly find the study medium column (handling potential invisible spaces)
+    medium_col_list = [col for col in df_url.columns if search_term in col]
     
-    # Normalize DataFrame column names to remove common invisible spaces
-    normalized_df_cols = [col.replace('\xa0', ' ').strip() for col in df_url.columns] 
-    col_map = {normalized_df_cols[i]: df_url.columns[i] for i in range(len(df_url.columns))}
+    if not medium_col_list:
+        st.error(f"Required column containing '{search_term}' not found in the data.")
+    elif gender_col not in df_url.columns:
+        st.error(f"Required column '{gender_col}' not found in the data.")
+    else:
+        study_medium_column = medium_col_list[0]
 
-    for expected_substring in search_list:
-        found = [norm_col for norm_col in col_map.keys() if expected_substring in norm_col]
+        # 2. Data Cleaning and Transformation (Pandas logic remains the same)
         
-        if found:
-            actual_semester_columns.append(col_map[found[0]])
+        # Drop rows with missing values in the relevant columns
+        df_cleaned_study_medium = df_url.dropna(subset=[gender_col, study_medium_column]).copy()
 
-    # 2. DATA PROCESSING AND RESHAPE CHECK
-    
-    if len(actual_semester_columns) != 12:
-        st.warning(f"Could only find {len(actual_semester_columns)} out of 12 required semester columns. Visualization cannot be created.")
-        st.error("Cannot create a complete 4x3 heatmap. Please check column names in your CSV.")
-        st.stop() # <-- CORRECTED: Use st.stop() instead of return
-    
-    # Proceed only if we have all 12 columns
-    semester_df = df_url[actual_semester_columns]
+        # Group by gender and study medium, then count the occurrences
+        grouped_study_medium_counts = df_cleaned_study_medium.groupby([gender_col, study_medium_column]).size().reset_index(name='Count')
 
-    # Convert data to numeric
-    semester_df = semester_df.apply(pd.to_numeric, errors='coerce')
-    semester_means = semester_df.mean()
-    
-    # Reshape the data for the heatmap
-    heatmap_data = np.array(semester_means).reshape(4, 3) 
+        # 3. Create the Plotly Grouped Bar Chart (Replaces Seaborn/Matplotlib)
+        
+        # Define custom colors (Plotly uses color names or hex codes)
+        # Using Plotly's default blue and red names for visibility and distinction
+        colors_study_medium = {'Male': 'blue', 'Female': 'red'} 
 
-    # Define labels and text for Plotly
-    x_labels = ['Sem 1', 'Sem 2', 'Sem 3']
-    y_labels = ['Year 1', 'Year 2', 'Year 3', 'Year 4']
-    text_data = np.round(heatmap_data, decimals=2)
+        fig = px.bar(
+            grouped_study_medium_counts,
+            x=study_medium_column,
+            y='Count',
+            color=gender_col,          # 'hue' equivalent
+            barmode='group',           # Displays bars side-by-side
+            title='H.S.C or Equivalent Study Medium Distribution by Gender',
+            labels={'Count': 'Number of Respondents', study_medium_column: 'Study Medium'},
+            color_discrete_map=colors_study_medium # Apply the custom colors
+        )
 
-    # 3. Create and Display Plotly Heatmap
-    fig = go.Figure(data=go.Heatmap(
-        z=heatmap_data,
-        x=x_labels,
-        y=y_labels,
-        colorscale='RdBu', 
-        colorbar=dict(title='Average Score'),
-        text=text_data,
-        texttemplate="%{text}",
-        hoverinfo="z+x+y"
-    ))
+        # 4. Customizing the layout (Replacing plt.xticks(rotation=45) and plt.tight_layout())
+        fig.update_layout(
+            xaxis_title='Study Medium',
+            yaxis_title='Number of Respondents',
+            xaxis_tickangle=-45, # Rotates x-axis labels
+            legend_title_text='Gender',
+            # Move legend to the top center
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5) 
+        )
+        
+        # Ensure categories are treated as strings
+        fig.update_xaxes(type='category')
 
-    fig.update_layout(
-        title='Average Performance by Semester and Year',
-        xaxis_title='Semester',
-        yaxis_title='Year',
-        yaxis=dict(autorange="reversed") 
-    )
-
-    st.plotly_chart(fig, use_container_width=True)
+        # 5. Display the Chart
+        st.plotly_chart(fig, use_container_width=True)
 
 else:
     st.warning("Could not process data because the DataFrame is empty.")
