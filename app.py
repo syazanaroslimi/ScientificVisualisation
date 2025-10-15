@@ -189,7 +189,7 @@ if not df_url.empty:
             names='Attended_Coaching_Center',
             title='Total Students Who Attend a Coaching Center',
             # You can customize the colors here, e.g., use a distinct palette
-            color_discrete_sequence=px.colors.qualitative.pastel
+            color_discrete_sequence=px.colors.qualitative.Pastel
         )
 
         # Enhance layout for better presentation (displaying percentage and label inside)
