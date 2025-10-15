@@ -1,8 +1,6 @@
 import pandas as pd
 import streamlit as st # Import the streamlit library
 import plotly.express as px
-import numpy as np
-import plotly.graph_objects as go
 
 # Set the URL for the CSV file
 url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
@@ -360,89 +358,6 @@ else:
     st.warning("Could not process data because the DataFrame is empty.")
 
 #_________________________________________________________________________________________________________________________________________
-#code 7
-# --- Data Loading Function (Retained for application context) ---
-@st.cache_data
-def load_data():
-    """Loads the student survey data from a public URL."""
-    url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
-    try:
-        df = pd.read_csv(url)
-        return df
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return pd.DataFrame()
 
-# Load the DataFrame
-df_url = load_data()
-# ---------------------------------------------------------------
-
-st.title("Average Performance by Semester and Year 🔥❄️")
-
-if not df_url.empty:
-    # 1. Data Selection and Processing (Pandas/NumPy logic remains)
-    semester_columns = [
-        "1st Year Semester 1", "1st Year Semester 2", "1st Year Semester 3",
-        "2nd Year Semester 1", "2nd Year Semester 2", "2nd Year Semester 3",
-        "3rd Year Semester 1", "3rd Year Semester 2", "3rd Year Semester 3",
-        "4th Year Semester 1", "4th Year Semester 2", "4th Year Semester 3"
-    ]
-    
-    # Ensure all required columns exist before proceeding
-    missing_cols = [col for col in semester_columns if col not in df_url.columns]
-    if missing_cols:
-        st.error(f"Missing required semester columns: {missing_cols}")
-    else:
-        semester_df = df_url[semester_columns]
-
-        # Convert data to numeric, coercing errors to NaN
-        semester_df = semester_df.apply(pd.to_numeric, errors='coerce')
-
-        # Calculate the mean for each semester column
-        semester_means = semester_df.mean()
-
-        # Reshape the data for the heatmap
-        # Ensure there are 12 means before reshaping to 4x3
-        if len(semester_means) != 12:
-            st.error(f"Expected 12 semester means, but found {len(semester_means)}. Cannot reshape to 4x3.")
-            st.write(semester_means)
-        else:
-            heatmap_data = np.array(semester_means).reshape(4, 3) # 4 years, 3 semesters
-
-            # Define labels for the Plotly chart
-            x_labels = ['Sem 1', 'Sem 2', 'Sem 3']
-            y_labels = ['Year 1', 'Year 2', 'Year 3', 'Year 4']
-            
-            # Round the data for display in the annotation text
-            text_data = np.round(heatmap_data, decimals=2)
-
-            # 2. Create the Plotly Heatmap (Replaces Seaborn/Matplotlib)
-            fig = go.Figure(data=go.Heatmap(
-                z=heatmap_data,
-                x=x_labels,
-                y=y_labels,
-                # Plotly's equivalent of 'coolwarm' is often 'RdBu' or a similar diverging scale
-                colorscale='RdBu', 
-                colorbar=dict(title='Average Score'),
-                # Add text annotation directly to the heatmap cells
-                text=text_data,
-                texttemplate="%{text}",
-                hoverinfo="z+x+y" # Show mean, semester, and year on hover
-            ))
-
-            # 3. Customizing the layout
-            fig.update_layout(
-                title='Average Performance by Semester and Year',
-                xaxis_title='Semester',
-                yaxis_title='Year',
-                # Ensure the y-axis is displayed bottom-to-top (Year 1 at bottom)
-                yaxis=dict(autorange="reversed") 
-            )
-
-            # 4. Display the Chart
-            st.plotly_chart(fig, use_container_width=True)
-
-else:
-    st.warning("Could not process data because the DataFrame is empty.")
 
 
