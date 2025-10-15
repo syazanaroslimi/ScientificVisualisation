@@ -1,6 +1,8 @@
 import pandas as pd
 import streamlit as st # Import the streamlit library
 import plotly.express as px
+import numpy as np
+import plotly.graph_objects as go
 
 # Set the URL for the CSV file
 url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
@@ -358,6 +360,105 @@ else:
     st.warning("Could not process data because the DataFrame is empty.")
 
 #_________________________________________________________________________________________________________________________________________
+#code 7
+# --- Data Loading Function (Retained for application context) ---
+@st.cache_data
+def load_data():
+    """Loads the student survey data from a public URL."""
+    url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
+    try:
+        df = pd.read_csv(url)
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
 
+# Load the DataFrame
+df_url = load_data()
+# ---------------------------------------------------------------
+
+st.title("Average Performance by Semester and Year Heatmap 📈")
+
+if not df_url.empty:
+    
+    # 1. ROBUST COLUMN IDENTIFICATION (Most likely source of the error)
+    
+    # Define a list of expected column name segments
+    search_list = []
+    for year in range(1, 5):
+        year_str = f"{year}st" if year == 1 else f"{year}th"
+        for sem in range(1, 4):
+            search_list.append(f"{year_str} Year Semester {sem}")
+
+    # Find the actual columns in the DataFrame using flexible substring matching
+    actual_semester_columns = []
+    
+    # Normalize DataFrame column names to remove common invisible spaces
+    normalized_df_cols = [col.replace('\xa0', ' ').strip() for col in df_url.columns] 
+    
+    # Create a mapping from normalized name back to original name
+    col_map = {normalized_df_cols[i]: df_url.columns[i] for i in range(len(df_url.columns))}
+
+    for expected_substring in search_list:
+        # Search the normalized names for the expected substring
+        found = [norm_col for norm_col in col_map.keys() if expected_substring in norm_col]
+        
+        if found:
+            # Add the original, exact column name to our list
+            actual_semester_columns.append(col_map[found[0]])
+        # Note: If not found, it's simply skipped, leading to fewer columns, which is handled below.
+
+    # 2. DATA PROCESSING AND RESHAPE CHECK
+    
+    if len(actual_semester_columns) < 12:
+        st.warning(f"Could only find {len(actual_semester_columns)} out of 12 required semester columns. Visualization may be incomplete or impossible.")
+        st.write("Columns found:", actual_semester_columns)
+        
+        # If less than 12 columns are found, stop here to avoid the reshape error
+        # A more complex script could handle this by reshaping to (N, 3) where N < 4, but let's assume 12 are needed.
+        if len(actual_semester_columns) != 12:
+            st.error("Cannot create a complete 4x3 heatmap. Please check column names in your CSV.")
+            return # Exit the function if we can't proceed
+    
+    # Proceed only if we have all 12 columns
+    semester_df = df_url[actual_semester_columns]
+
+    # Convert data to numeric
+    semester_df = semester_df.apply(pd.to_numeric, errors='coerce')
+    semester_means = semester_df.mean()
+    
+    # If the number of means is not 12, it still indicates a structural issue, but let's trust the column selection now.
+    
+    # Reshape the data for the heatmap (This is where the IndexError was likely occurring)
+    heatmap_data = np.array(semester_means).reshape(4, 3) # 4 years, 3 semesters
+
+    # Define labels and text for Plotly
+    x_labels = ['Sem 1', 'Sem 2', 'Sem 3']
+    y_labels = ['Year 1', 'Year 2', 'Year 3', 'Year 4']
+    text_data = np.round(heatmap_data, decimals=2)
+
+    # 3. Create and Display Plotly Heatmap
+    fig = go.Figure(data=go.Heatmap(
+        z=heatmap_data,
+        x=x_labels,
+        y=y_labels,
+        colorscale='RdBu', 
+        colorbar=dict(title='Average Score'),
+        text=text_data,
+        texttemplate="%{text}",
+        hoverinfo="z+x+y"
+    ))
+
+    fig.update_layout(
+        title='Average Performance by Semester and Year',
+        xaxis_title='Semester',
+        yaxis_title='Year',
+        yaxis=dict(autorange="reversed") 
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+else:
+    st.warning("Could not process data because the DataFrame is empty.")
 
 
