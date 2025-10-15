@@ -200,3 +200,96 @@ if not df_url.empty:
 
 else:
     st.warning("Could not process data because the DataFrame is empty.")
+
+#_________________________________________________________________________________________________________________________________________
+#code 5
+# --- Data Loading Function (Assumed to be defined and used above this snippet) ---
+@st.cache_data
+def load_data():
+    """Loads the student survey data from a public URL."""
+    url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
+    try:
+        df = pd.read_csv(url)
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
+
+# Load the DataFrame
+df_url = load_data()
+# --------------------------------------------------------------------------------
+
+st.title("Program Improvement Suggestions by Gender 🧑‍🎓👩‍🎓")
+
+if not df_url.empty:
+    # 1. Safely find the column names
+    gender_col = 'Gender'
+    search_term = 'What aspects of the program could be improved?'
+    
+    # Robustly find the improvement column (handling potential invisible spaces)
+    improvement_col_list = [col for col in df_url.columns if search_term in col]
+    
+    if not improvement_col_list:
+        st.error(f"Required column containing '{search_term}' not found in the data.")
+    elif gender_col not in df_url.columns:
+        st.error(f"Required column '{gender_col}' not found in the data.")
+    else:
+        improved_aspects_column = improvement_col_list[0]
+
+        # 2. Data Cleaning and Transformation (Same Pandas logic as before)
+        
+        # Drop rows with missing values in the relevant columns
+        df_cleaned = df_url.dropna(subset=[gender_col, improved_aspects_column]).copy()
+
+        # Split the multiple responses and stack them
+        df_split = df_cleaned.assign(**{
+            improved_aspects_column: df_cleaned[improved_aspects_column].astype(str).str.split(',')
+        }).explode(improved_aspects_column)
+
+        # Clean up any leading/trailing whitespace
+        df_split[improved_aspects_column] = df_split[improved_aspects_column].str.strip()
+
+        # Group by gender and the improved aspects, then count the occurrences
+        grouped_counts = df_split.groupby([gender_col, improved_aspects_column]).size().reset_index(name='Count')
+        
+        # Filter out empty or meaningless responses that resulted from splitting
+        grouped_counts = grouped_counts[grouped_counts[improved_aspects_column] != '']
+
+        # 3. Create the Plotly Grouped Bar Chart (Replaces Seaborn/Matplotlib)
+        
+        # Define custom colors (Plotly uses color names or hex codes)
+        colors_map = {'Male': 'lightblue', 'Female': 'lightcoral'} # Using lightcoral for visibility
+
+        fig = px.bar(
+            grouped_counts,
+            x=improved_aspects_column,
+            y='Count',
+            color=gender_col,          # 'hue' equivalent
+            barmode='group',           # Displays bars side-by-side
+            title='Aspects of the Program that Could Be Improved by Gender',
+            labels={'Count': 'Number of Respondents', improved_aspects_column: 'Aspects to Improve'},
+            color_discrete_map=colors_map # Apply the custom colors
+        )
+
+        # 4. Customizing the layout (Replacing plt.xticks(rotation=45) and plt.tight_layout())
+        fig.update_layout(
+            xaxis_title='Aspects to Improve',
+            yaxis_title='Number of Respondents',
+            xaxis_tickangle=-45,
+            legend_title_text='Gender',
+            # Move legend to the top for better use of space
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1) 
+        )
+        
+        # Ensure categories are treated as strings
+        fig.update_xaxes(type='category')
+
+        # 5. Display the Chart
+        st.plotly_chart(fig, use_container_width=True)
+
+else:
+    st.warning("Could not process data because the DataFrame is empty.")
+
+#_________________________________________________________________________________________________________________________________________
+
+
