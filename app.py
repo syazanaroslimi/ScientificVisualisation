@@ -31,8 +31,8 @@ st.dataframe(df_url)#.head())
 # Optionally, you can display the whole DataFrame (if it's not too big)
 # st.subheader("Full DataFrame")
 # st.dataframe(df_url)
-
-#SECOND CODE
+#_________________________________________________________________________________________________________________________________________
+#code kedua
 # --- Data Loading Function (Same as before, using caching) ---
 @st.cache_data
 def load_data():
@@ -74,8 +74,8 @@ if not df_url.empty:
 
 else:
     st.warning("Could not process data because the DataFrame is empty.")
-
-#Third CODE
+#_________________________________________________________________________________________________________________________________________
+#code ketiga
 # --- Data Loading Function (re-using the cached function from previous examples) ---
 @st.cache_data
 def load_data():
@@ -145,6 +145,58 @@ if not df_url.empty:
 
     # 4. Display the Chart in Streamlit
     st.plotly_chart(fig, use_container_width=True)
+
+else:
+    st.warning("Could not process data because the DataFrame is empty.")
+#_________________________________________________________________________________________________________________________________________
+#code 4
+# --- Data Loading Function (Assumed to be defined and used above this snippet) ---
+@st.cache_data
+def load_data():
+    """Loads the student survey data from a public URL."""
+    url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
+    try:
+        df = pd.read_csv(url)
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
+
+# Load the DataFrame
+df_url = load_data()
+# --------------------------------------------------------------------------------
+
+st.title("Student Coaching Center Attendance 🎓")
+
+if not df_url.empty:
+    # 1. Safely find the column name
+    search_term = 'Did you ever attend a Coaching center?'
+    column_list = [col for col in df_url.columns if search_term in col]
+
+    if not column_list:
+        st.error(f"Required column containing '{search_term}' not found in the data.")
+    else:
+        column_name = column_list[0]
+
+        # 2. Data Processing: Calculate counts and prepare DataFrame for Plotly
+        coaching_counts_df = df_url[column_name].value_counts().reset_index()
+        coaching_counts_df.columns = ['Attended_Coaching_Center', 'Count']
+
+        # 3. Create the Plotly Pie Chart (equivalent to plt.pie)
+        fig = px.pie(
+            coaching_counts_df,
+            values='Count',
+            names='Attended_Coaching_Center',
+            title='Did Students Attend a Coaching Center?',
+            # You can customize the colors here, e.g., use a distinct palette
+            color_discrete_sequence=px.colors.qualitative.Bold
+        )
+
+        # Enhance layout for better presentation (displaying percentage and label inside)
+        fig.update_traces(textposition='inside', textinfo='percent+label')
+
+        # 4. Display the Chart
+        st.plotly_chart(fig, use_container_width=True)
 
 else:
     st.warning("Could not process data because the DataFrame is empty.")
