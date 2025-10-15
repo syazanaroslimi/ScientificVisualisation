@@ -4,6 +4,7 @@ import plotly.express as px
 import numpy as np
 import plotly.graph_objects as go
 
+
 # Set the URL for the CSV file
 url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
 
@@ -381,44 +382,31 @@ st.title("Average Performance by Semester and Year Heatmap 📈")
 
 if not df_url.empty:
     
-    # 1. ROBUST COLUMN IDENTIFICATION (Most likely source of the error)
-    
-    # Define a list of expected column name segments
+    # 1. ROBUST COLUMN IDENTIFICATION
     search_list = []
     for year in range(1, 5):
         year_str = f"{year}st" if year == 1 else f"{year}th"
         for sem in range(1, 4):
             search_list.append(f"{year_str} Year Semester {sem}")
 
-    # Find the actual columns in the DataFrame using flexible substring matching
     actual_semester_columns = []
     
     # Normalize DataFrame column names to remove common invisible spaces
     normalized_df_cols = [col.replace('\xa0', ' ').strip() for col in df_url.columns] 
-    
-    # Create a mapping from normalized name back to original name
     col_map = {normalized_df_cols[i]: df_url.columns[i] for i in range(len(df_url.columns))}
 
     for expected_substring in search_list:
-        # Search the normalized names for the expected substring
         found = [norm_col for norm_col in col_map.keys() if expected_substring in norm_col]
         
         if found:
-            # Add the original, exact column name to our list
             actual_semester_columns.append(col_map[found[0]])
-        # Note: If not found, it's simply skipped, leading to fewer columns, which is handled below.
 
     # 2. DATA PROCESSING AND RESHAPE CHECK
     
-    if len(actual_semester_columns) < 12:
-        st.warning(f"Could only find {len(actual_semester_columns)} out of 12 required semester columns. Visualization may be incomplete or impossible.")
-        st.write("Columns found:", actual_semester_columns)
-        
-        # If less than 12 columns are found, stop here to avoid the reshape error
-        # A more complex script could handle this by reshaping to (N, 3) where N < 4, but let's assume 12 are needed.
-        if len(actual_semester_columns) != 12:
-            st.error("Cannot create a complete 4x3 heatmap. Please check column names in your CSV.")
-            return # Exit the function if we can't proceed
+    if len(actual_semester_columns) != 12:
+        st.warning(f"Could only find {len(actual_semester_columns)} out of 12 required semester columns. Visualization cannot be created.")
+        st.error("Cannot create a complete 4x3 heatmap. Please check column names in your CSV.")
+        st.stop() # <-- CORRECTED: Use st.stop() instead of return
     
     # Proceed only if we have all 12 columns
     semester_df = df_url[actual_semester_columns]
@@ -427,10 +415,8 @@ if not df_url.empty:
     semester_df = semester_df.apply(pd.to_numeric, errors='coerce')
     semester_means = semester_df.mean()
     
-    # If the number of means is not 12, it still indicates a structural issue, but let's trust the column selection now.
-    
-    # Reshape the data for the heatmap (This is where the IndexError was likely occurring)
-    heatmap_data = np.array(semester_means).reshape(4, 3) # 4 years, 3 semesters
+    # Reshape the data for the heatmap
+    heatmap_data = np.array(semester_means).reshape(4, 3) 
 
     # Define labels and text for Plotly
     x_labels = ['Sem 1', 'Sem 2', 'Sem 3']
@@ -460,5 +446,3 @@ if not df_url.empty:
 
 else:
     st.warning("Could not process data because the DataFrame is empty.")
-
-
