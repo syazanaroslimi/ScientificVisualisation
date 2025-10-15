@@ -128,7 +128,7 @@ if not df_url.empty:
         # To make bars purple and differentiate them, use a sequential purple color scale
         # Plotly Express automatically assigns different shades if 'color' is mapped to a column
         color='Count', # This will assign colors based on the count, creating a gradient
-        color_continuous_scale=px.colors.sequential.Purples # Use a sequential purple palette
+        color_continuous_scale=px.colors.sequential.Plasma # Use a sequential purple palette
     )
 
     # 3. Customize the layout for better readability (similar to tight_layout and xticks rotation)
