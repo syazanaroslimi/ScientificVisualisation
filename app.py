@@ -291,5 +291,73 @@ else:
     st.warning("Could not process data because the DataFrame is empty.")
 
 #_________________________________________________________________________________________________________________________________________
+#code 6
+# --- Data Loading Function (Assumed to be defined and used for efficiency) ---
+@st.cache_data
+def load_data():
+    """Loads the student survey data from a public URL."""
+    url = 'https://raw.githubusercontent.com/syazanaroslimi/ScientificVisualisation/refs/heads/main/ARTS_STUDENT-SURVEY_exported.csv'
+    try:
+        df = pd.read_csv(url)
+        return df
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+        return pd.DataFrame()
+
+# Load the DataFrame
+df_url = load_data()
+# --------------------------------------------------------------------------------
+
+st.title("Distribution of Responses to 'Classes are mostly' 🏫")
+
+if not df_url.empty:
+    # 1. Safely find the column name
+    search_term = 'Classes are mostly'
+    column_list = [col for col in df_url.columns if search_term in col]
+
+    if not column_list:
+        st.error(f"Required column containing '{search_term}' not found in the data.")
+    else:
+        column_name = column_list[0]
+
+        # 2. Data Processing: Calculate counts and prepare DataFrame for Plotly
+        classes_counts_df = df_url[column_name].value_counts().reset_index()
+        classes_counts_df.columns = ['Class_Type', 'Count']
+        
+        # Sort the results by count (optional, but good practice for bar charts)
+        classes_counts_df = classes_counts_df.sort_values('Count', ascending=False)
+
+        # 3. Create the Plotly Bar Chart (Replaces Matplotlib)
+        fig = px.bar(
+            classes_counts_df,
+            x='Class_Type',
+            y='Count',
+            title='Distribution of Responses to "Classes are mostly"',
+            labels={'Class_Type': 'Class Type', 'Count': 'Count'},
+            
+            # Attractive Color: Use a sequential color scale like "Blues"
+            color='Count', 
+            color_continuous_scale=px.colors.sequential.Blues
+        )
+
+        # 4. Customizing the layout (Replacing plt.xticks(rotation=45) and plt.tight_layout())
+        fig.update_layout(
+            xaxis_title='Class Type',
+            yaxis_title='Count',
+            xaxis_tickangle=-45, # Rotates the x-axis labels
+            hovermode="x unified"
+        )
+        
+        # Ensure categories are treated as strings
+        fig.update_xaxes(type='category')
+
+        # 5. Display the Chart
+        st.plotly_chart(fig, use_container_width=True)
+
+else:
+    st.warning("Could not process data because the DataFrame is empty.")
+
+#_________________________________________________________________________________________________________________________________________
+
 
 
