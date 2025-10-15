@@ -23,10 +23,10 @@ df_url = load_data(url)
 
 # Use Streamlit functions to display the DataFrame's head
 st.title("Student Survey Data Preview 📊")
-st.write("Displaying the first 5 rows of the loaded DataFrame:")
+#st.write("Displaying the first 5 rows of the loaded DataFrame:")
 
 # st.dataframe() displays an interactive table, and .head() selects the first 5 rows
-st.dataframe(df_url.head()) 
+st.dataframe(df_url)#.head()) 
 
 # Optionally, you can display the whole DataFrame (if it's not too big)
 # st.subheader("Full DataFrame")
