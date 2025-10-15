@@ -103,10 +103,10 @@ if not df_url.empty:
     # st.write(df_url.columns) 
     
     # Using a robust way to find the column if the name has tricky spaces:
-    #column_name = [col for col in df_url.columns if 'Bachelor Academic Year in EU' in col][0]
+    column_name = [col for col in df_url.columns if 'Bachelor Academic Year in EU' in col][0]
     
-    #bachelor_year_counts = df_url[column_name].value_counts().reset_index()
-    #bachelor_year_counts.columns = ['Academic_Year', 'Count']
+    bachelor_year_counts = df_url[column_name].value_counts().reset_index()
+    bachelor_year_counts.columns = ['Academic_Year', 'Count']
     
     # Ensure the academic year is sorted for better visualization if it's numerical
     # (assuming academic years are usually numbers, e.g., 1, 2, 3)
